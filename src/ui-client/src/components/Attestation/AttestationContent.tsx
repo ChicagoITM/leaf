@@ -27,6 +27,13 @@ interface Props {
 }
 
 export default class AttestationContent extends React.PureComponent<Props> {
+    public componentDidMount() {
+        // auto-populate use/session type, irb status, and phi options
+        this.props.handleUseTypeClick(SessionType.Research);
+        this.props.handleApprovalTypeClick(false);
+        this.props.handlePhiTypeClick(false);
+    }
+    
     public render() {
         const c = this.props.className;
         const { 
