@@ -14,12 +14,14 @@ namespace Model.Options
         public const string Unsecured = "UNSECURED";
         public const string Saml2 = @"SAML2";
         public const string ActiveDirectory = @"ACTIVEDIRECTORY";
+        public const string AppDb = @"APPDB";
 
-        public static readonly IEnumerable<string> DirectMechanisms = new string[] { Unsecured, ActiveDirectory };
+        public static readonly IEnumerable<string> DirectMechanisms = new string[] { Unsecured, ActiveDirectory, AppDb };
         public static readonly IEnumerable<string> PassiveMechanisms = new string[] { Saml2 };
         public static readonly IEnumerable<string> ValidMechanisms = DirectMechanisms.Concat(PassiveMechanisms);
 
         public AuthorizationMechanism Mechanism { get; set; }
+        public bool AllowAllAuthenticatedUsers { get; set; }
 
         static bool ValidMechanism(string mech) => ValidMechanisms.Contains(mech);
         public AuthorizationOptions WithMechanism(string value)
@@ -38,6 +40,9 @@ namespace Model.Options
                 case ActiveDirectory:
                     Mechanism = AuthorizationMechanism.ActiveDirectory;
                     break;
+                case AppDb:
+                    Mechanism = AuthorizationMechanism.AppDb;
+                    break;
                 default:
                     Mechanism = AuthorizationMechanism.Unsecured;
                     break;
@@ -48,6 +53,7 @@ namespace Model.Options
 
         public bool IsSaml2 => Mechanism == AuthorizationMechanism.Saml2;
         public bool IsActiveDirectory => Mechanism == AuthorizationMechanism.ActiveDirectory;
+        public bool IsAppDb => Mechanism == AuthorizationMechanism.AppDb;
         public bool IsUnsecured => Mechanism == AuthorizationMechanism.Unsecured;
     }
 
@@ -56,6 +62,7 @@ namespace Model.Options
         Unsecured = 0,
         ActiveDirectory = 1,
         Saml2 = 2,
+        AppDb = 3
     }
 
     public class SAML2AuthorizationOptions : IBindTarget
