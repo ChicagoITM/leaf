@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,13 +6,19 @@
 using System;
 using Microsoft.Extensions.Options;
 using Model.Authorization;
-using Model.Compiler.SqlServer;
+using Model.Compiler;
+using Model.Compiler.PanelSqlCompiler;
+using Model.Compiler.SqlBuilder;
 using Model.Options;
+using Services.Compiler.SqlBuilder;
 
 namespace Tests.Mock.Models.Compiler
 {
     public static class MockOptions
     {
+        static readonly ISqlDialect dialect = new TSqlDialect();
+        static readonly IOptions<CompilerOptions> opts = GenerateOmopOptions();
+
         public static IOptions<CompilerOptions> GenerateOmopOptions()
         {
             return Options.Create(new CompilerOptions
@@ -28,12 +34,11 @@ namespace Tests.Mock.Models.Compiler
             return Options.Create(new CohortOptions());
         }
 
-        public static SqlServerCompiler GenerateSqlServerCompiler()
+        public static PanelSqlCompiler GenerateSqlServerCompiler()
         {
             IOptions<CompilerOptions> compilerOptions = GenerateOmopOptions();
-            IOptions<CohortOptions> cohortOptions = GenerateCohortOptions();
 
-            return new SqlServerCompiler(new MockUser(), compilerOptions, cohortOptions);
+            return new PanelSqlCompiler(new MockUser(), dialect, compilerOptions);
         }
 
         class MockUser : IUserContext

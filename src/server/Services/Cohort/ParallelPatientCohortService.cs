@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,9 +6,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -25,13 +23,16 @@ namespace Services.Cohort
         readonly ClinDbOptions clinDbOpts;
 
         public ParallelPatientCohortService(
-            ISqlCompiler compiler,
+            IPanelSqlCompiler compiler,
+            ISqlProviderQueryExecutor executor,
+            ICachedCohortPreparer cohortPreparer,
             PatientCountAggregator patientCountAggregator,
-            IOptions<ClinDbOptions> clinOpts,
-            ILogger<PatientCohortService> logger) : base(compiler, clinOpts, logger)
+            IOptions<ClinDbOptions> clinDbOpts,
+            IOptions<CompilerOptions> compilerOpts,
+            ILogger<PatientCohortService> logger) : base(compiler, executor, cohortPreparer, clinDbOpts, compilerOpts, logger)
         {
             this.patientCountAggregator = patientCountAggregator;
-            this.clinDbOpts = clinOpts.Value;
+            this.clinDbOpts = clinDbOpts.Value;
         }
 
         protected override async Task<PatientCohort> GetCohortAsync(PatientCountQuery query, CancellationToken token)
@@ -41,14 +42,15 @@ namespace Services.Cohort
             return new PatientCohort
             {
                 QueryId = query.QueryId,
-                PatientIds = await GetPatientSetAsync(leafQueries, token),
+                PatientIds = await GetPatientSetAsync(leafQueries, query.DependentQueryIds, token),
                 SqlStatements = leafQueries.Select(q => q.SqlStatement),
                 Panels = query.Panels.Where(p => p.Domain == PanelDomain.Panel)
             };
         }
 
-        async Task<HashSet<string>> GetPatientSetAsync(IReadOnlyCollection<LeafQuery> queries, CancellationToken token)
+        async Task<HashSet<string>> GetPatientSetAsync(IReadOnlyCollection<LeafQuery> queries, IEnumerable<Guid> queryIds, CancellationToken token)
         {
+            var dependentCohortSql = await GetCrossServerDependentCohortSqlIfNeeded(queryIds);
             var partials = new ConcurrentBag<PartialPatientCountContext>();
             var tasks = new List<Task>();
             using (var throttler = new SemaphoreSlim(clinDbOpts.Cohort.MaxParallelThreads))
@@ -59,7 +61,7 @@ namespace Services.Cohort
                     tasks.Add(
                         Task.Run(async () =>
                         {
-                            var result = await GetPartialContext(q, token);
+                            var result = await GetPartialContext(q, dependentCohortSql, token);
                             throttler.Release();
                             partials.Add(result);
                         })
@@ -72,26 +74,21 @@ namespace Services.Cohort
             return patientCountAggregator.Aggregate(partials);
         }
 
-        async Task<PartialPatientCountContext> GetPartialContext(LeafQuery query, CancellationToken token)
+        async Task<PartialPatientCountContext> GetPartialContext(LeafQuery query, string dependentCohortSql, CancellationToken token)
         {
             var partialIds = new HashSet<string>();
-            using (var cn = new SqlConnection(clinDbOptions.ConnectionString))
+            var connStr = clinDbOptions.ConnectionString;
+            var sql = dependentCohortSql + query.SqlStatement;
+            var timeout = clinDbOptions.DefaultTimeout;
+            var reader = await executor.ExecuteReaderAsync(connStr, sql, timeout, token);
+
+            while (reader.Read())
             {
-                await cn.OpenAsync();
-
-                using (var cmd = new SqlCommand(query.SqlStatement, cn))
-                {
-                    cmd.CommandTimeout = clinDbOptions.DefaultTimeout;
-
-                    using (var reader = await cmd.ExecuteReaderAsync(token))
-                    {
-                        while (reader.Read())
-                        {
-                            partialIds.Add(reader[0].ToString());
-                        }
-                    }
-                }
+                partialIds.Add(reader[0].ToString().Trim());
             }
+
+            await reader.CloseAsync();
+
             return new PartialPatientCountContext
             {
                 PatientIds = partialIds,
@@ -102,22 +99,30 @@ namespace Services.Cohort
         IReadOnlyCollection<LeafQuery> GetLeafQueries(IEnumerable<Panel> panels)
         {
             var queries = new List<LeafQuery>();
-            var parameters = compiler.BuildContextParameterSql();
 
             foreach (var p in panels)
             {
                 var q = new LeafQuery
                 {
                     IsInclusionCriteria = p.IncludePanel,
-                    SqlStatement = $"{parameters} {compiler.BuildPanelSql(p)}"
+                    SqlStatement = compiler.BuildPanelSql(p)
                 };
 
                 queries.Add(q);
             }
 
-            log.LogInformation("Parallel SqlStatements:{Sql}", queries);
+            log.LogInformation("Parallel SqlStatements:{Sql}", queries.Select(q => q.SqlStatement));
 
             return queries;
+        }
+
+        async Task<string> GetCrossServerDependentCohortSqlIfNeeded(IEnumerable<Guid> queryIds)
+        {
+            if (!compilerOpts.SharedDbServer && queryIds.Any())
+            {
+                return await cohortPreparer.Prepare(queryIds, false);
+            }
+            return "";
         }
     }
 }

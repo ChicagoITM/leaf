@@ -1,11 +1,11 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -19,9 +19,12 @@ namespace Services.Cohort
     public class CtePatientCohortService : PatientCohortService
     {
         public CtePatientCohortService(
-            ISqlCompiler compiler,
+            IPanelSqlCompiler compiler,
+            ISqlProviderQueryExecutor executor,
+            ICachedCohortPreparer cohortPreparer,
             IOptions<ClinDbOptions> clinOpts,
-            ILogger<PatientCohortService> logger) : base(compiler, clinOpts, logger)
+            IOptions<CompilerOptions> compilerOpts,
+            ILogger<PatientCohortService> logger) : base(compiler, executor, cohortPreparer, clinOpts, compilerOpts, logger)
         {
         }
 
@@ -32,32 +35,26 @@ namespace Services.Cohort
             return new PatientCohort
             {
                 QueryId = query.QueryId,
-                PatientIds = await GetPatientSetAsync(cteQuery, token),
+                PatientIds = await GetPatientSetAsync(cteQuery, query.DependentQueryIds, token),
                 SqlStatements = new string[] { cteQuery.SqlStatement },
                 Panels = query.Panels.Where(p => p.Domain == PanelDomain.Panel)
             };
         }
 
-        async Task<HashSet<string>> GetPatientSetAsync(ISqlStatement query, CancellationToken token)
+        async Task<HashSet<string>> GetPatientSetAsync(ISqlStatement query, IEnumerable<Guid> queryIds, CancellationToken token)
         {
+            var dependentCohortSql = await GetCrossServerDependentCohortSqlIfNeeded(queryIds);
             var patientIds = new HashSet<string>();
-            using (var cn = new SqlConnection(clinDbOptions.ConnectionString))
+            var reader = await executor.ExecuteReaderAsync(clinDbOptions.ConnectionString, dependentCohortSql + query.SqlStatement,
+                                                           clinDbOptions.DefaultTimeout, token);
+
+            while (reader.Read())
             {
-                await cn.OpenAsync();
-
-                using (var cmd = new SqlCommand(query.SqlStatement, cn))
-                {
-                    cmd.CommandTimeout = clinDbOptions.DefaultTimeout;
-
-                    using (var reader = await cmd.ExecuteReaderAsync(token))
-                    {
-                        while (reader.Read())
-                        {
-                            patientIds.Add(reader[0].ToString());
-                        }
-                    }
-                }
+                patientIds.Add(reader[0].ToString().Trim());
             }
+
+            await reader.CloseAsync();
+
             return patientIds;
         }
 
@@ -66,6 +63,15 @@ namespace Services.Cohort
             var query = compiler.BuildCteSql(panels);
             log.LogInformation("CTE SqlStatement:{Sql}", query.SqlStatement);
             return query;
+        }
+
+        async Task<string> GetCrossServerDependentCohortSqlIfNeeded(IEnumerable<Guid> queryIds)
+        {
+            if (!compilerOpts.SharedDbServer && queryIds.Any())
+            {
+                return await cohortPreparer.Prepare(queryIds, false);
+            }
+            return "";
         }
     }
 }

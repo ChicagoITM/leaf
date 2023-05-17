@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@ export interface ConfigDTO {
     attestation: AttestationOptionsDTO;
     cohort: CohortConfigDTO;
     client: ClientOptions;
-    version: string;
+    version: VersionConfigDTO;
 }
 
 interface AuthenticationConfigDTO {
@@ -32,8 +32,21 @@ interface LogoutConfigDTO {
 
 interface AttestationOptionsDTO {
     enabled: boolean;
+    skipModeSelection: boolean;
     text?: string[];
-    type?: CustomAttestationType
+    type?: CustomAttestationType;
+    credits: AttestationCreditsOptionsDTO;
+}
+
+interface AttestationCreditsOptionsDTO {
+    enabled: boolean;
+    logos: string[];
+    text: string;
+}
+
+interface VersionConfigDTO {
+    db: string;
+    server: string;
 }
 
 export enum CustomAttestationType {
@@ -44,6 +57,7 @@ export enum CustomAttestationType {
 interface CohortConfigDTO {
     cacheLimit: number;
     exportLimit: number;
+    lowCellMaskingThreshold: number;
     deidentificationEnabled: boolean;
 }
 

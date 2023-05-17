@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,8 +54,8 @@ namespace Model.Cohort
                 log.LogError("ConceptDatasetCompilerContext error. State:{State}", validationContext.State);
                 return result;
             }
-            var exeContext = conceptDatasetSqlCompiler.BuildConceptDatasetSql(validationContext.Context);
-            log.LogInformation("Compiled ConceptDataset execution context. Context:{@Context}", exeContext);
+            var exeContext = await conceptDatasetSqlCompiler.BuildConceptDatasetSql(validationContext.Context);
+            log.LogInformation("Compiled ConceptDataset execution context. Context:{@Context}", exeContext.ToCleaned());
 
             var data = await executor.ExecuteDatasetAsync(exeContext, cancel);
             log.LogInformation("ConceptDataset complete. Patients:{Patients} Records:{Records}", data.Results.Keys.Count, data.Results.Sum(d => d.Value.Count()));

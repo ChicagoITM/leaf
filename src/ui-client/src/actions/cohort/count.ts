@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,7 @@ import { aggregateStatistics } from '../../services/cohortAggregatorApi';
 import { fetchCount, fetchDemographics } from '../../services/cohortApi';
 import { clearPreviousPatientList } from '../../services/patientListApi';
 import { formatMultipleSql } from '../../utils/formatSql';
-import { getPatientListFromNewBaseDataset } from './patientList';
+import { getPatientListFromNewBaseDataset, getPatientListDataset, setPatientListCustomColumnNames } from './patientList';
 import { setAggregateVisualizationData, setNetworkVisualizationData } from './visualize';
 import { showInfoModal } from '../generalUi';
 import { InformationModalState } from '../../models/state/GeneralUiState';
@@ -26,6 +26,7 @@ import { panelHasLocalOnlyConcepts } from '../../utils/panelUtils';
 import { allowAllDatasets } from '../../services/datasetSearchApi';
 import { clearAllTimelinesData } from '../../services/timelinesApi';
 import { setDatasetSearchResult, setDatasetSearchTerm } from '../datasets';
+import { sleep } from '../../utils/Sleep';
 
 export const REGISTER_NETWORK_COHORTS = 'REGISTER_NETWORK_COHORTS';
 export const COHORT_COUNT_SET = 'COHORT_COUNT_SET';
@@ -41,6 +42,7 @@ export const COHORT_DEMOGRAPHICS_ERROR = 'COHORT_DEMOGRAPHICS_ERROR';
 
 export interface CohortCountAction {
     id: number;
+    cached?: boolean;
     cancel?: CancelTokenSource;
     cohorts?: NetworkIdentity[];
     countResults?: PatientCountState;
@@ -58,6 +60,7 @@ export interface CohortCountAction {
 export const getCounts = () => {
     return async (dispatch: Dispatch, getState: () => AppState) => {
         let atLeastOneSucceeded = false;
+        let atleastOneCached = false;
         const state = getState();
         const runLocalOnly = panelHasLocalOnlyConcepts(state.panels, state.panelFilters);
         const cancelSource = Axios.CancelToken.source();
@@ -94,12 +97,14 @@ export const getCounts = () => {
 
                                 const countData: PatientCountState = {
                                     ...countDataDto.result,
+                                    cached: countDataDto.cached,
                                     queryId: countDataDto.queryId,
                                     sqlStatements: [ formatMultipleSql(countDataDto.result.sqlStatements) ],
                                     state: CohortStateType.LOADED
                                 }
                                 queryId = countData.queryId;
                                 atLeastOneSucceeded = true;
+                                atleastOneCached = countData.cached === true ? true : atleastOneCached;
                                 dispatch(setNetworkCohortCount(nr.id, countData));
                                 
                         },  error => {
@@ -117,7 +122,7 @@ export const getCounts = () => {
         ).then( async () => {
 
             if (getState().cohort.count.state !== CohortStateType.REQUESTING) { return; }
-            dispatch(setCohortCountFinished(atLeastOneSucceeded));
+            dispatch(setCohortCountFinished(atLeastOneSucceeded, atleastOneCached));
 
             if (atLeastOneSucceeded) {
                 const visibleDatasets = await allowAllDatasets();
@@ -145,6 +150,7 @@ const getDemographics = () => {
         const state = getState();
         const cancelSource = Axios.CancelToken.source();
         const responders: NetworkIdentity[] = [];
+        const defaultDatasets = [ ...state.datasets.all.values() ].filter(ds => ds.isDefault);
         let atLeastOneSucceeded = false;
         state.responders.forEach((nr: NetworkIdentity) => { 
             if (state.cohort.networkCohorts.get(nr.id)!.count.state === CohortStateType.LOADED && !nr.isGateway) { 
@@ -153,7 +159,7 @@ const getDemographics = () => {
         });
         dispatch(setCohortDemographicsStarted(state.responders, cancelSource));
 
-        Promise.all(
+        await Promise.all(
             // For each enabled responder
             responders.map((nr: NetworkIdentity, i: number) => { 
                 return new Promise( async (resolve, reject) => {
@@ -172,6 +178,10 @@ const getDemographics = () => {
                                 dispatch(setNetworkVisualizationData(nr.id, demographics.statistics));
                                 getPatientListFromNewBaseDataset(nr.id, demographics.patients, dispatch, getState);
 
+                                if (demographics.columnNames) {
+                                    dispatch(setPatientListCustomColumnNames(nr.id, new Map(Object.entries(demographics.columnNames))));
+                                }
+
                                 const newState = getState();
                                 const aggregate = await aggregateStatistics(newState.cohort.networkCohorts, newState.responders) as DemographicStatistics;
                                 dispatch(setAggregateVisualizationData(aggregate));
@@ -181,7 +191,8 @@ const getDemographics = () => {
                         })
                         .then(() => resolve(null));
                 })
-            })                
+            })
+        // Set cohort state to LOADED            
         ).then(() => {
             if (getState().cohort.count.state !== CohortStateType.LOADED) { return; }
             if (atLeastOneSucceeded) {
@@ -190,6 +201,18 @@ const getDemographics = () => {
                 dispatch(setCohortDemographicsErrored());
             }
         });
+
+        // Auto-load any other `default` datasets
+        for (const ds of defaultDatasets) {
+            // Hack: redux `dispatch()` isn't async, so we can't await it,
+            // but we also don't want to overwhelm the server with a lot of potential parallel
+            // requests. Thus poll every half second to infer that previous dataset completed,
+            // then execute
+            while (getState().cohort.patientList.configuration.isFetching) {
+                await sleep(500);
+            }
+            dispatch(getPatientListDataset(ds));
+        }
     };
 };
 
@@ -201,7 +224,8 @@ export const getDemographicsIfNeeded = () => {
             state.cohort.patientList.state === CohortStateType.NOT_LOADED &&
             (
                 (state.cohort.networkCohorts.size === 1 && state.cohort.count.value <= state.auth.config!.cohort.cacheLimit) ||
-                state.cohort.networkCohorts.size > 1
+                (state.cohort.networkCohorts.size > 1) ||
+                (state.cohort.networkCohorts.size === 1 && state.cohort.count.value > state.auth.config!.cohort.lowCellMaskingThreshold)
             )
         ) {
             dispatch(getDemographics());
@@ -241,10 +265,11 @@ export const setCohortCountStarted = (responders: NetworkResponderMap, cancel: C
     };
 };
 
-export const setCohortCountFinished = (success: boolean): CohortCountAction => {
+export const setCohortCountFinished = (success: boolean, cached: boolean): CohortCountAction => {
     return {
         id: 0,
         success,
+        cached,
         type: COHORT_COUNT_FINISH
     };
 } 

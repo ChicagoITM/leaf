@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -116,7 +116,7 @@ export class SqlSetEditor extends React.PureComponent<Props,State> {
     private generateSequentialIntegerId = () => {
         const { sets } = this.props.data.sqlSets;
         if (!sets.size) { return 1; }
-        const max = Math.max.apply(Math, [ ...sets.values() ].map((s) => s.id));
+        const max = Math.max(...[ ...sets.values() ].map((s) => s.id));
         return max + 1;
     }
 

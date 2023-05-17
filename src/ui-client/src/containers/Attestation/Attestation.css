@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,16 +22,27 @@
     overflow-x: hidden;
 }
 
+.attestation-header {
+    padding: 4px 8px !important;
+}
+
 .attestation-header h5 {
     width: 100%;
 }
 
 .attestation-error-text,
 .attestation-browser-error,
-.attestation-deidentonly {
+.attestation-deidentonly,
+.attestation-downtime-text {
     font-size: 1.2rem;
     text-align: center;
     width: 100%;
+}
+
+.attestation-downtime-text svg {
+    color: orange;
+    filter: drop-shadow( 2px 2px 1px rgba(0, 0, 0, 0.1) );
+    font-size: 3rem;
 }
 
 .attestation-browser-error-inner,
@@ -355,4 +366,37 @@
 .attestation-custom-html > p,
 .attestation-custom-html > li {
     font-size: 1rem !important;
+}
+
+.attestation-custom-credits {
+    display: flex !important;
+    width: 100%;
+}
+
+.attestation-custom-credits > div {
+    flex-basis: 0;
+    flex-grow: 1;
+}
+
+.attestation-custom-credits-logo-wrapper,
+.attestation-custom-credits-text {
+    text-align: center;
+}
+
+.attestation-custom-credits-text {
+    font-family: Roboto;
+    font-size: 1.1rem;
+    font-weight: 300;
+}
+
+.attestation-custom-credits-text span {
+    border: 1px solid rgb(235,235,235);
+    border-radius: 8px;
+    display: inline-block;
+    max-width: 200px;
+    padding: 4px;
+}
+
+.attestation-custom-credits-logo-wrapper img {
+    height: 50px;
 }

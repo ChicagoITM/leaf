@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,6 +75,19 @@ class Timelines extends React.Component<Props, State> {
         const { overlayMode, showPanelSelector, showConcepts } = this.state;
         const hasConcepts =  timelines.configuration.panels.size > 0;
         const config = timelines.configuration;
+
+        /**
+         * Block timelines when under lowcellmasking threshold
+         */
+        if (patientCount <= auth.config.cohort.lowCellMaskingThreshold) {
+            return (
+                <div className={`${c}-error`}>
+                    <p>
+                    Sorry, your administrator has configured Leaf to not show timelines for cohorts of {auth.config.cohort.lowCellMaskingThreshold} patients or less.
+                    </p>
+                </div>
+            );
+        } 
 
         return  (
             <div className={`${c}-container scrollable-offset-by-header ${showConcepts ? 'show-concepts' : ''}`}>

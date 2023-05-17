@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,7 +59,7 @@ export class Binary extends React.PureComponent<Props> {
                                 <LabelList dataKey="label" position="insideBottomRight" />
                             </Bar>
                             <Bar animationBegin={delay} barSize={config.barSize} dataKey="value" isAnimationActive={true} >
-                                {leftBars.map((d: BinarySplit) => <Cell key={d.label} fill={d.color} />)}
+                                {leftBars.map((d: BinarySplit) => <Cell key={d.label} className={d.label} fill={d.color} />)}
                                 <LabelList dataKey="value" formatter={this.formatNegativeNumber} position="insideRight"/>
                             </Bar>
                         </BarChart>
@@ -73,7 +73,7 @@ export class Binary extends React.PureComponent<Props> {
                                 <LabelList dataKey="label" position="insideBottomLeft" />
                             </Bar>
                             <Bar animationBegin={delay} barSize={config.barSize} dataKey="value" isAnimationActive={true} >
-                                {rightBars.map((d: BinarySplit) => <Cell key={d.label} fill={d.color} />)}
+                                {rightBars.map((d: BinarySplit) => <Cell key={d.label} className={d.label} fill={d.color} />)}
                                 <LabelList dataKey="value" position="right" formatter={this.formatNumber} />
                             </Bar>
                         </BarChart>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,8 +7,9 @@
 
 import { AppState } from '../../models/state/AppState';
 import { HttpFactory } from './../HttpFactory';
-import { AdminDatasetQuery, AdminDemographicQuery, toDTO, fromDTO, AdminDatasetQueryDTO } from '../../models/admin/Dataset';
+import { AdminDatasetQuery, AdminDemographicQuery, toDTO, fromDTO, AdminDatasetQueryDTO, AdminDemographicQueryDTO } from '../../models/admin/Dataset';
 import { PatientListDatasetShape } from '../../models/patientList/Dataset';
+import { mapToObject } from '../../utils/mapToObject';
 
 /*
  * Gets a Dataset.
@@ -58,13 +59,14 @@ export const deleteDataset = async (state: AppState, dataset: AdminDatasetQuery)
 /*
  * Gets the Demographics Dataset.
  */ 
-export const getAdminDemographicsDataset = async (state: AppState): Promise<AdminDatasetQuery> => {
+export const getAdminDemographicsDataset = async (state: AppState): Promise<AdminDemographicQuery> => {
     const { token } = state.session.context!;
     const http = HttpFactory.authenticated(token);
     const resp = await http.get(`api/admin/demographics`);
-    const ds = resp.data as AdminDemographicQuery;
-    const converted: AdminDatasetQuery = {
+    const ds = resp.data as AdminDemographicQueryDTO;
+    const converted: AdminDemographicQuery = {
         id: 'demographics',
+        columnNames: new Map(Object.entries(ds.columnNames)),
         constraints: [],
         isEncounterBased: false,
         name: 'Basic Demographics',
@@ -79,16 +81,22 @@ export const getAdminDemographicsDataset = async (state: AppState): Promise<Admi
 /*
  * Updates or Inserts existing Demographics Dataset.
  */ 
-export const upsertDemographicsDataset = async (state: AppState, dataset: AdminDatasetQuery): Promise<AdminDatasetQuery> => {
+export const upsertDemographicsDataset = async (state: AppState, dataset: AdminDemographicQuery): Promise<AdminDemographicQuery> => {
     const { token } = state.session.context!;
     const http = HttpFactory.authenticated(token);
-    const resp = await http.put(`api/admin/demographics`, {
-        sqlStatement: dataset.sqlStatement
-    });
+    const params: any = {
+        sqlStatement: dataset.sqlStatement,
+        columnNames: {}
+    };
+    for (const pair of dataset.columnNames.entries()) {
+        params.columnNames[pair[0]] = pair[1];
+    }
+    const resp = await http.put(`api/admin/demographics`, params);
     const ds = resp.data as AdminDemographicQuery;
-    const converted: AdminDatasetQuery = {
+    const converted: AdminDemographicQuery = {
         ...dataset,
         ...ds,
+        columnNames: new Map(Object.entries(ds.columnNames)),
         unsaved: false
     };
     return converted;

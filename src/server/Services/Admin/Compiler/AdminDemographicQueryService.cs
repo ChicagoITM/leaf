@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@ using Dapper;
 using Model.Compiler;
 using Services.Tables;
 using Model.Extensions;
+using Services.Search;
 
 namespace Services.Admin.Compiler
 {
@@ -39,12 +40,17 @@ namespace Services.Admin.Compiler
             {
                 await cn.OpenAsync();
 
-                var demo = await cn.QueryFirstOrDefaultAsync<AdminDemographicQuery>(
+                var demo = await cn.QueryFirstOrDefaultAsync<AdminDemographicQueryRecord>(
                     Sql.Get,
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: opts.DefaultTimeout);
 
-                return demo;
+                if (demo != null) return demo.ToAdminDemographicQuery();
+                return new AdminDemographicQuery
+                {
+                    SqlStatement = "",
+                    ColumnNames = new Dictionary<string, string>()
+                };
             }
         }
 
@@ -54,13 +60,18 @@ namespace Services.Admin.Compiler
             {
                 await cn.OpenAsync();
 
-                var updated = await cn.QueryFirstOrDefaultAsync<AdminDemographicQuery>(
+                var updated = await cn.QueryFirstOrDefaultAsync<AdminDemographicQueryRecord>(
                     Sql.Update,
-                    new { sql = query.SqlStatement, user = user.UUID },
+                    new
+                    {
+                        sql = query.SqlStatement,
+                        columns = ColumnNamesSerde.Serialize(query.ColumnNames),
+                        user = user.UUID
+                    },
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: opts.DefaultTimeout);
 
-                return updated;
+                return updated.ToAdminDemographicQuery();
             }
         }
 
@@ -68,6 +79,25 @@ namespace Services.Admin.Compiler
         {
             public const string Get = "adm.sp_GetDemographicQuery";
             public const string Update = "adm.sp_UpdateDemographicQuery";
+        }
+
+        class AdminDemographicQueryRecord
+        {
+            public string SqlStatement { get; set; }
+            public string ColumnNamesJson { get; set; }
+            public DateTime LastChanged { get; set; }
+            public string ChangedBy { get; set; }
+
+            public AdminDemographicQuery ToAdminDemographicQuery()
+            {
+                return new AdminDemographicQuery
+                {
+                    SqlStatement = SqlStatement,
+                    ColumnNames = ColumnNamesSerde.Deserialize(ColumnNamesJson),
+                    LastChanged = LastChanged,
+                    ChangedBy = ChangedBy
+                };
+            }
         }
     }
 }

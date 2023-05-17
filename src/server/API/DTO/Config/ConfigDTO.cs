@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2022, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ namespace API.DTO.Config
         public AttestationConfigDTO Attestation { get; set; }
         public CohortConfigDTO Cohort { get; set; }
         public ClientOptionsDTO Client { get;set; }
-        public string Version { get; set; }
+        public VersionConfigDTO Version { get; set; }
     }
 
     public class AuthenticationConfigDTO
@@ -45,14 +45,25 @@ namespace API.DTO.Config
     {
         public int CacheLimit { get; set; }
         public int ExportLimit { get; set; }
+        public int LowCellMaskingThreshold { get; set; }
         public bool DeidentificationEnabled { get; set; }
     }
 
     public class AttestationConfigDTO
     {
         public bool Enabled { get; set; }
+        public bool SkipModeSelection { get; set; }
         public string[] Text { get; set; }
         public CustomAttestationType Type { get; set; }
+
+        public AttestationCreditsDTO Credits { get; set; }
+
+        public class AttestationCreditsDTO
+        {
+            public bool Enabled { get; set; }
+            public string[] Logos { get; set; }
+            public string Text { get; set; }
+        }
     }
 
     public class ClientOptionsDTO
@@ -88,5 +99,11 @@ namespace API.DTO.Config
             public string Email { get; set; }
             public string URI { get; set; }
         }
+    }
+
+    public class VersionConfigDTO
+    {
+        public string Server { get; set; }
+        public string Db { get; set; }
     }
 }

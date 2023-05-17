@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2022, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,8 @@ using Model.Authentication;
 using Model.Authorization;
 using Model.Cohort;
 using Model.Compiler;
-using Model.Compiler.SqlServer;
+using Model.Compiler.SqlBuilder;
+using Model.Compiler.PanelSqlCompiler;
 using Model.Export;
 using Model.Network;
 using Model.Options;
@@ -34,9 +35,12 @@ using Services.Admin.Compiler;
 using Services.Admin.Network;
 using Services.Admin.Query;
 using Services.Admin.User;
+using Services.Admin.Notification;
 using Services.Authentication;
 using Services.Authorization;
 using Services.Cohort;
+using Services.Compiler;
+using Services.Compiler.SqlBuilder;
 using Services.Export;
 using Services.Network;
 using Services.Search;
@@ -68,7 +72,9 @@ namespace API.Options
 
             services.AddIAMServices();
 
-            services.AddTransient<ISqlCompiler, SqlServerCompiler>();
+            services.AddHostedService<BackgroundServerStateSynchronizer>();
+
+            services.AddTransient<IPanelSqlCompiler, PanelSqlCompiler>();
 
             services.AddTransient<NetworkEndpointProvider.INetworkEndpointReader, NetworkEndpointReader>();
 
@@ -90,11 +96,14 @@ namespace API.Options
                 services.AddHostedService<BackgroundCertificateSynchronizer>();
             }
 
+            services.AddSingleton<IServerStateCache, ServerStateCache>();
+            services.AddSingleton<IServerStateProvider, ServerStateService>();
             services.AddTransient<ConceptHintSearcher.IConceptHintSearchService, ConceptHintSearchService>();
             services.AddTransient<ConceptTreeSearcher.IConceptTreeReader, ConceptTreeReader>();
             services.AddTransient<PreflightResourceChecker.IPreflightConceptReader, PreflightResourceReader>();
             services.AddTransient<PreflightResourceChecker.IPreflightResourceReader, PreflightResourceReader>();
             services.AddTransient<CohortCounter.ICohortCacheService, CohortCacheService>();
+            services.AddTransient<ICachedCohortFetcher, CachedCohortFetcher>();
             services.AddTransient<IDemographicSqlCompiler, DemographicSqlCompiler>();
             services.AddTransient<DemographicCompilerValidationContextProvider.ICompilerContextProvider, DemographicCompilerContextProvider>();
             services.AddTransient<DemographicProvider.IDemographicsExecutor, DemographicsExecutor>();
@@ -120,6 +129,7 @@ namespace API.Options
 
         static IServiceCollection AddAdminServices(this IServiceCollection services)
         {
+            services.AddTransient<AdminServerStateManager.IAdminServerStateService, AdminServerStateService>();
             services.AddTransient<AdminConceptSqlSetManager.IAdminConceptSqlSetService, AdminConceptSqlSetService>();
             services.AddTransient<AdminSpecializationManager.IAdminSpecializationService, AdminSpecializationService>();
             services.AddTransient<AdminSpecializationGroupManager.IAdminSpecializationGroupService, AdminSpecializationGroupService>();
@@ -154,9 +164,9 @@ namespace API.Options
 
         static IServiceCollection AddIAMServices(this IServiceCollection services)
         {
-            services.AddSingleton<ITokenBlacklistCache, TokenBlacklistCache>();
-            services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();
-            services.AddHostedService<BackgroundTokenBlacklistSynchronizer>();
+            services.AddSingleton<IInvalidatedTokenCache, TokenInvalidatedCache>();
+            services.AddSingleton<IInvalidatedTokenService, TokenInvalidatedService>();
+            services.AddHostedService<BackgroundInvalidatedTokenSynchronizer>();
 
             var sp = services.BuildServiceProvider();
             var authenticationOptions = sp.GetRequiredService<IOptions<AuthenticationOptions>>().Value;
@@ -175,9 +185,11 @@ namespace API.Options
         static IServiceCollection AddCohortQueryExecutionService(this IServiceCollection services)
         {
             var sp = services.BuildServiceProvider();
-            var opts = sp.GetRequiredService<IOptions<ClinDbOptions>>().Value;
+            var clinDbOpts = sp.GetRequiredService<IOptions<ClinDbOptions>>().Value;
+            var compilerOpts = sp.GetRequiredService<IOptions<CompilerOptions>>().Value;
 
-            switch (opts.Cohort.QueryStrategy)
+            // Query strategy
+            switch (clinDbOpts.Cohort.QueryStrategy)
             {
                 case ClinDbOptions.ClinDbCohortOptions.QueryStrategyOptions.CTE:
                     services.AddTransient<CohortCounter.IPatientCohortService, CtePatientCohortService>();
@@ -185,6 +197,49 @@ namespace API.Options
 
                 case ClinDbOptions.ClinDbCohortOptions.QueryStrategyOptions.Parallel:
                     services.AddTransient<CohortCounter.IPatientCohortService, ParallelPatientCohortService>();
+                    break;
+            }
+
+            // Target clinical RDBMS
+            switch (clinDbOpts.Rdbms)
+            {
+                case ClinDbOptions.RdbmsType.SqlServer:
+                    services.AddTransient<ISqlDialect, TSqlDialect>();
+                    services.AddTransient<ISqlProviderQueryExecutor, SqlServerQueryExecutor>();
+
+                    if (compilerOpts.SharedDbServer)
+                    {
+                        services.AddTransient<ICachedCohortPreparer, SharedSqlServerCachedCohortPreparer>();
+                    }
+                    else
+                    {
+                        services.AddTransient<ICachedCohortPreparer, SqlServerCachedCohortPreparer>();
+                    }
+                    break;
+                case ClinDbOptions.RdbmsType.MySql:
+                    services.AddTransient<ISqlDialect, MySqlDialect>();
+                    services.AddTransient<ISqlProviderQueryExecutor, MySqlQueryExecutor>();
+                    services.AddTransient<ICachedCohortPreparer, MySqlCachedCohortPreparer>();
+                    break;
+                case ClinDbOptions.RdbmsType.MariaDb:
+                    services.AddTransient<ISqlDialect, MariaDbDialect>();
+                    services.AddTransient<ISqlProviderQueryExecutor, MariaDbQueryExecutor>();
+                    services.AddTransient<ICachedCohortPreparer, MariaDbCachedCohortPreparer>();
+                    break;
+                case ClinDbOptions.RdbmsType.PostgreSql:
+                    services.AddTransient<ISqlDialect, PostgreSqlDialect>();
+                    services.AddTransient<ISqlProviderQueryExecutor, PostgreSqlQueryExecutor>();
+                    services.AddTransient<ICachedCohortPreparer, PostgreSqlCachedCohortPreparer>();
+                    break;
+                case ClinDbOptions.RdbmsType.Oracle:
+                    services.AddTransient<ISqlDialect, PlSqlDialect>();
+                    services.AddTransient<ISqlProviderQueryExecutor, OracleQueryExecutor>();
+                    services.AddTransient<ICachedCohortPreparer, OracleCachedCohortPreparer>();
+                    break;
+                case ClinDbOptions.RdbmsType.BigQuery:
+                    services.AddTransient<ISqlDialect, BigQuerySqlDialect>();
+                    services.AddTransient<ISqlProviderQueryExecutor, BigQueryQueryExecutor>();
+                    services.AddTransient<ICachedCohortPreparer, BigQuerySqlCachedCohortPreparer>();
                     break;
             }
 

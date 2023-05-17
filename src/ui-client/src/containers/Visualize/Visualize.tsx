@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -108,6 +108,20 @@ class Visualize extends React.Component<Props, State> {
         if (cohort.networkCohorts.size === 1 && cohort.count.value > cacheLimit) {
             return <CohortTooLargeBox cacheLimit={cacheLimit} />
         }
+
+        /**
+         * Block visualize when under lowcellmasking threshold
+         */
+         if (cohort.networkCohorts.size === 1 && cohort.count.value <= auth.config.cohort.lowCellMaskingThreshold) {
+            return (
+                <div className={`${c}-error`}>
+                    <p>
+                    Sorry, your administrator has configured Leaf to not show visualizations for cohorts of {auth.config.cohort.lowCellMaskingThreshold} patients or less.
+                    </p>
+                </div>
+            );
+        } 
+
         /**
          * Show a loading spinner if no responders have completed yet.
          */
@@ -121,6 +135,7 @@ class Visualize extends React.Component<Props, State> {
                 </div>
             );
         } 
+
         /**
          * Show a loading spinner if no responders have completed yet.
          */

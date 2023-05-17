@@ -1,4 +1,4 @@
--- Copyright (c) 2021, UW Medicine Research IT, University of Washington
+-- Copyright (c) 2022, UW Medicine Research IT, University of Washington
 -- Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 -- This Source Code Form is subject to the terms of the Mozilla Public
 -- License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,6 +10,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
 -- =======================================
 -- Author:      Cliff Spital
 -- Create date: 2019/6/12
@@ -22,6 +23,7 @@ BEGIN
 
     SELECT
         SqlStatement,
+        ColumnNamesJson,
         LastChanged,
         ChangedBy
     FROM app.DemographicQuery;

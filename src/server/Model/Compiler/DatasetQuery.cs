@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@ namespace Model.Compiler
         string Category { get; set; }
         string Description { get; set; }
         string SqlStatement { get; set; }
+        bool IsDefault { get; set; }
         ICollection<string> Tags { get; set; }
     }
 
@@ -66,6 +67,7 @@ namespace Model.Compiler
         public string Category { get; set; }
         public string Description { get; set; }
         public bool IsEncounterBased { get; set; }
+        public bool IsDefault { get; set; }
         public string SqlStatement { get; set; }
         public ICollection<string> Tags { get; set; }
 

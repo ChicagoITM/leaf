@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@ export function defaultNetworkPatientListState(): PatientListNetworkState {
 export function defaultPatientListState(): PatientListState {
     return {
         configuration: {
+            customColumnNames: new Map(),
             displayColumns: [],
             isFetching: false,
             multirowDatasets: new Map(),
@@ -75,6 +76,17 @@ export function setPagination(state: CohortState, action: CohortPatientListActio
             ...state.patientList,
             configuration: Object.assign({}, state.patientList.configuration, {
                 pageNumber: action.id
+            })
+        }
+    })
+};
+
+export function setCustomColumnNames(state: CohortState, action: CohortPatientListAction): CohortState {
+    return Object.assign({}, state, {
+        patientList: {
+            ...state.patientList,
+            configuration: Object.assign({}, state.patientList.configuration, {
+                customColumnNames: action.customColumnNames
             })
         }
     })
@@ -137,6 +149,7 @@ export function setPatientListDatasetReceived(state: CohortState, action: Cohort
     const copy = Object.assign({}, state, {
         patientList: {
             ...state.patientList,
+            state: CohortStateType.LOADED,
             configuration: {
                 ...state.patientList.configuration,
                 isFetching: false,

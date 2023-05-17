@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,18 @@ namespace Model.Cohort
         public static ShapedDatasetSchema From(DatasetResultSchema resultSchema, DatasetExecutionContext context)
         {
             var contract = ShapedDatasetContract.For(resultSchema.Shape, context.DatasetQuery);
-            var fields = resultSchema.Fields.Where(f => contract.Fields.Any(cf => cf.Name == f.Name)).ToArray();
+            var fields = resultSchema.Fields
+                .Join(contract.Fields,
+                      a => a.Name.ToLowerInvariant(),
+                      b => b.Name.ToLowerInvariant(),
+                      (a, b) => new SchemaField
+                      {
+                          Index = a.Index,
+                          Name = b.Name,
+                          Type = a.Type
+                      }
+                ).ToArray();
+
             return new ShapedDatasetSchema
             {
                 Shape = resultSchema.Shape,

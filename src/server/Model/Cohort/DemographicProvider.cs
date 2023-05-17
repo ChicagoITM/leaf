@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,7 @@ namespace Model.Cohort
         readonly DeidentificationOptions deidentOpts;
         readonly ILogger<DemographicProvider> log;
 
-        public DemographicProvider(
+        public DemographicProvider (
             IUserContext user,
             DemographicCompilerValidationContextProvider contextProvider,
             IOptions<ClientOptions> clientOpts,
@@ -90,7 +90,7 @@ namespace Model.Cohort
             token.ThrowIfCancellationRequested();
 
             var deidentify = deidentOpts.Patient.Enabled && user.Anonymize();
-            var exeContext = compiler.BuildDemographicSql(validationContext.Context, deidentify);
+            var exeContext = await compiler.BuildDemographicSql(validationContext.Context, deidentify);
             log.LogInformation("Compiled demographic execution context. Context:{@Context}", exeContext);
 
             var ctx = await executor.ExecuteDemographicsAsync(exeContext, token);
@@ -101,7 +101,8 @@ namespace Model.Cohort
             result.Demographics = new Demographic
             {
                 Patients = GetDemographicsWithSettings(ctx.Exported),
-                Statistics = GetStatisticsWithSettings(stats)
+                Statistics = GetStatisticsWithSettings(stats),
+                ColumnNames = validationContext.Context.DemographicQuery.ColumnNames
             };
 
             return result;
@@ -132,10 +133,6 @@ namespace Model.Cohort
             if (deidentOpts.Cohort.Noise.Enabled)
             {
                 throw new Exception("Demographics cannot be returned if Cohort De-identification Noise is enabled");
-            }
-            if (deidentOpts.Cohort.LowCellSizeMasking.Enabled)
-            {
-                throw new Exception("Demographics cannot be returned if Cohort De-identification Low Cell Size Masking is enabled");
             }
         }
 

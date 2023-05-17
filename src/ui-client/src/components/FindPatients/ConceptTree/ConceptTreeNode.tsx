@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,7 +6,7 @@
  */ 
 
 import React from 'react';
-import { ConnectDragPreview, ConnectDragSource, DragSource, DragSourceConnector, DragSourceMonitor, ConnectDropTarget } from 'react-dnd'
+import { ConnectDragPreview, ConnectDragSource, DragSource, DragSourceConnector, DragSourceMonitor, ConnectDropTarget } from 'react-dnd-cjs'
 import { Collapse } from 'reactstrap';
 import { ConceptMap } from '../../../models/state/AppState';
 import { Concept } from '../../../models/concept/Concept';

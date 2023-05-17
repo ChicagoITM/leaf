@@ -1,4 +1,4 @@
--- Copyright (c) 2021, UW Medicine Research IT, University of Washington
+-- Copyright (c) 2022, UW Medicine Research IT, University of Washington
 -- Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 -- This Source Code Form is subject to the terms of the Mozilla Public
 -- License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,8 +10,15 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
+-- =======================================
+-- Author:      Cliff Spital
+-- Create date: 2019/6/12
+-- Description: Update the app.DemographicQuery record for an admin.
+-- =======================================
 CREATE PROCEDURE [adm].[sp_UpdateDemographicQuery]
     @sql nvarchar(4000),
+    @columns nvarchar(4000) = NULL,
     @user auth.[User]
 AS
 BEGIN
@@ -28,18 +35,20 @@ BEGIN
             UPDATE app.DemographicQuery
             SET
                 SqlStatement = @sql,
+                ColumnNamesJson = @columns,
                 LastChanged = GETDATE(),
                 ChangedBy = @user
             OUTPUT
                 inserted.SqlStatement,
+                inserted.ColumnNamesJson,
                 inserted.LastChanged,
                 inserted.ChangedBy;
         END;
         ELSE
         BEGIN;
-            INSERT INTO app.DemographicQuery (SqlStatement, LastChanged, ChangedBy, Shape)
-            OUTPUT inserted.SqlStatement, inserted.LastChanged, inserted.ChangedBy, inserted.Shape
-            VALUES (@sql, GETDATE(), @user, 3);
+            INSERT INTO app.DemographicQuery (SqlStatement, ColumnNamesJson, LastChanged, ChangedBy, Shape)
+            OUTPUT inserted.SqlStatement, inserted.ColumnNamesJson, inserted.LastChanged, inserted.ChangedBy, inserted.Shape
+            VALUES (@sql, @columns, GETDATE(), @user, 3);
         END;
 
         COMMIT;

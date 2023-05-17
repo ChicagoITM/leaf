@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,17 +14,26 @@ namespace Model.Cohort
 {
     public abstract class PatientCohortService : CohortCounter.IPatientCohortService
     {
-        protected readonly ISqlCompiler compiler;
+        protected readonly IPanelSqlCompiler compiler;
+        protected readonly ISqlProviderQueryExecutor executor;
+        protected readonly ICachedCohortPreparer cohortPreparer;
         protected readonly ClinDbOptions clinDbOptions;
+        protected readonly CompilerOptions compilerOpts;
         protected readonly ILogger<PatientCohortService> log;
 
         protected PatientCohortService(
-            ISqlCompiler compiler,
-            IOptions<ClinDbOptions> clinOpts,
+            IPanelSqlCompiler compiler,
+            ISqlProviderQueryExecutor executor,
+            ICachedCohortPreparer cohortPreparer,
+            IOptions<ClinDbOptions> clinDbOptions,
+            IOptions<CompilerOptions> compilerOpts,
             ILogger<PatientCohortService> logger)
         {
             this.compiler = compiler;
-            clinDbOptions = clinOpts.Value;
+            this.executor = executor;
+            this.cohortPreparer = cohortPreparer;
+            this.clinDbOptions = clinDbOptions.Value;
+            this.compilerOpts = compilerOpts.Value;
             log = logger;
         }
 

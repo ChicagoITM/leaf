@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -101,7 +101,6 @@ export const moveDatasetCategory = (dataset: PatientListDatasetQuery, category: 
         type: MOVE_DATASET_CATEGORY
     };
 };
-
 
 export const setDatasets = (datasets: PatientListDatasetQuery[], result: DatasetSearchResult): DatasetAction => {
     return {

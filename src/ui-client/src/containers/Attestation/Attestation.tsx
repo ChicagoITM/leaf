@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,7 +12,7 @@ import { Modal, ModalBody, ModalHeader } from 'reactstrap';
 import { attestAndLoadSession } from '../../actions/session';
 import AttestationContent from '../../components/Attestation/AttestationContent';
 import AttestationFooter from '../../components/Attestation/AttestationFooter';
-import { AppState } from '../../models/state/AppState';
+import { AppState, AuthorizationState } from '../../models/state/AppState';
 import { Attestation as AttestationModel, DocumentationApproval, SessionType } from '../../models/Session';
 import { UserContext, AppConfig } from '../../models/Auth';
 import { getBrowser } from '../../utils/browser';
@@ -20,21 +20,24 @@ import { setBrowser } from '../../actions/generalUi';
 import { Browser } from '../../models/state/GeneralUiState';
 import BrowserError from '../../components/Attestation/BrowserError';
 import moment from 'moment';
-import { version } from '../../../package.json'
+import pkg from '../../../package.json'
 import CustomAttestationConfirmation from '../../components/Attestation/CustomAttestationConfirmation';
 import StandardAttestationConfirmation from '../../components/Attestation/StandardAttestationConfirmation';
+import { ServerState } from '../../models/state/ServerState';
+import { IoMdConstruct } from 'react-icons/io';
 import './Attestation.css';
 
 interface DispatchProps {
     dispatch: any;
 }
 interface StateProps {
-    authError?: string;
+    auth: AuthorizationState;
     browser?: Browser;
     config?: AppConfig;
     hasAttested: boolean;
     hasUserIdToken: boolean;
     isSubmittingAttestation: boolean;
+    serverState?: ServerState,
     sessionError?: boolean;
     sessionLoadDisplay: string;
     sessionLoadProgressPercent: number;
@@ -54,6 +57,7 @@ export interface State {
 }
 
 class Attestation extends React.PureComponent<Props, State> {
+    private attestSkipStarted = false;
     private className = 'attestation';
     private defaultDocumentation: DocumentationApproval = {
         institution: '',
@@ -79,14 +83,25 @@ class Attestation extends React.PureComponent<Props, State> {
 
     public getSnapshotBeforeUpdate(prevProps: Props): any {
         const { config, isSubmittingAttestation, userContext, hasAttested } = this.props;
-        if (hasAttested || isSubmittingAttestation) { return null; }
-        if (userContext && config && !config.attestation.enabled) {
-            this.setState({ 
-                sessionTypeSelected: true, 
-                documentationStatusSelected: true, 
-                identificationTypeSelected: true,
-                attestation: { ...this.state.attestation, isIdentified: !config.cohort.deidentificationEnabled }
-            }, () => this.skipAttestationAndLoadSession());
+        if (hasAttested || isSubmittingAttestation || this.attestSkipStarted) { return null; }
+        if (userContext && config) {
+            if (!config.attestation.enabled) {
+                this.attestSkipStarted = true;
+                this.setState({ 
+                    sessionTypeSelected: true, 
+                    documentationStatusSelected: true, 
+                    identificationTypeSelected: true,
+                    attestation: { ...this.state.attestation, isIdentified: !config.cohort.deidentificationEnabled }
+                }, () => this.skipAttestationAndLoadSession());
+            } else if (config.attestation.skipModeSelection) {
+                this.attestSkipStarted = true;
+                this.setState({ 
+                    sessionTypeSelected: true, 
+                    documentationStatusSelected: true, 
+                    identificationTypeSelected: true,
+                    attestation: { ...this.state.attestation, isIdentified: !config.cohort.deidentificationEnabled }
+                });
+            }
         }
         return null;
     }
@@ -100,14 +115,21 @@ class Attestation extends React.PureComponent<Props, State> {
 
     public render() {
         const { sessionTypeSelected, documentationStatusSelected, identificationTypeSelected, attestation } = this.state;
-        const { sessionLoadProgressPercent, hasAttested, isSubmittingAttestation, hasUserIdToken, authError, sessionError, sessionLoadDisplay, userContext, browser, config } = this.props;
+        const { 
+            sessionLoadProgressPercent, hasAttested, isSubmittingAttestation, hasUserIdToken, auth, 
+            sessionError, sessionLoadDisplay, userContext, browser, config, serverState
+        } = this.props;
         const browserError = browser && browser.error;
         const c = this.className;
         const showConfirmation = sessionTypeSelected && documentationStatusSelected && identificationTypeSelected;
         const showContent = !showConfirmation;
-        const progressBarClasses = [ 'leaf-progressbar', 'animate', 'attestation-progressbar' ]
+        const progressBarClasses = [ 'leaf-progressbar', 'animate', 'attestation-progressbar' ];
+        const showDowntime = serverState && !serverState.isUp && auth && auth.userContext && !auth.userContext.isAdmin;
         
-        if (isSubmittingAttestation || !hasUserIdToken) {
+        /**
+         * Show progress bar if waiting on data from server
+         */
+        if (isSubmittingAttestation || !hasUserIdToken || !serverState) {
             progressBarClasses.push('show');
             if (!hasUserIdToken) {
                 progressBarClasses.push('slow');
@@ -124,11 +146,13 @@ class Attestation extends React.PureComponent<Props, State> {
                 size="lg"
                 wrapClassName={`${c}-modal-wrap`}>
                 <ModalHeader className={`${c}-header`}>
+
+                    {/* Top logo row (Leaf, ITHS, CD2H) */}
                     <div className={`${c}-leaf-logo-wrapper`}>
                         <img alt='leaf-logo' className={`${c}-leaf-logo`} src={process.env.PUBLIC_URL + '/images/logos/apps/leaf.svg'} />
                         <div className={`${c}-title`}>
                             leaf
-                            <span className={`${c}-leaf-version`}>v{version}</span>
+                            <span className={`${c}-leaf-version`}>v{pkg.version}</span>
                         </div>
                     </div>
                     <div className={`${c}-iths-logo-wrapper`}>
@@ -137,7 +161,29 @@ class Attestation extends React.PureComponent<Props, State> {
                     <div className={`${c}-cd2h-logo-wrapper`}>
                         <img alt='cd2h-logo' className={`${c}-cd2h-logo`} src={process.env.PUBLIC_URL + '/images/logos/orgs/cd2h.png'} />
                     </div>
+
+                    {/* Optional instance logo row */}
+                    {config && config.attestation.credits.enabled &&
+                    <div className={`${c}-custom-credits`}>
+                        {config.attestation.credits.logos &&
+                        config.attestation.credits.logos.map(l => {
+                            return (
+                                <div key={l} className={`${c}-custom-credits-logo-wrapper`}>
+                                    <img alt={`'${l}' not found`} className={`${c}-custom-logo`} src={process.env.PUBLIC_URL + l} />
+                                </div>
+                            );
+                        })
+                        }
+                        <div className={`${c}-custom-credits-text`}>
+                            <span>
+                                {config.attestation.credits.text}
+                            </span>
+                        </div>
+                    </div>
+                    }
+
                 </ModalHeader>
+
                 <div className={progressBarClasses.join(' ')} style={{ width: `${sessionLoadProgressPercent}%` }} />
                 {userContext && !userContext.isPhiOkay && 
                 <div className={`${c}-deidentonly`}>
@@ -145,9 +191,9 @@ class Attestation extends React.PureComponent<Props, State> {
                 </div>
                 }
                 <ModalBody className={`${c}-body`}>
-                    {authError && 
+                    {auth.error && 
                     <div className={`${c}-error-text`}>
-                        <p>{authError}</p>
+                        <p>{auth.error}</p>
                     </div>
                     }
                     {sessionError && 
@@ -155,10 +201,24 @@ class Attestation extends React.PureComponent<Props, State> {
                         <p>{sessionLoadDisplay}</p>
                     </div>
                     }
+                    {showDowntime && 
+                    <div className={`${c}-downtime-text`}>
+                        <div><IoMdConstruct/></div>
+                        {serverState.downtimeMessage && 
+                            <p>{serverState.downtimeMessage}</p>
+                        }
+                        {!serverState.downtimeMessage &&
+                            <div>
+                                <p>The Leaf server is currently down for maintenance. Please check back again soon, or email your Leaf Administrator for more information.</p>
+                                <p>Thank you and we apologize for the inconvenience.</p>
+                            </div>
+                        }
+                    </div>
+                    }
                     {browserError && 
                     <BrowserError />
                     }
-                    {hasUserIdToken && !sessionError && !browserError && [   
+                    {hasUserIdToken && !sessionError && !browserError && !showDowntime && [   
                     (<AttestationContent 
                         allowPhiIdentified={this.allowPhiIdentified}
                         parentState={this.state}
@@ -343,12 +403,13 @@ class Attestation extends React.PureComponent<Props, State> {
 const mapStateToProps = (state: AppState): StateProps => {
     const { auth, session } = state;
     return { 
-        authError: auth.error,
+        auth: auth,
         browser: state.generalUi.browser,
         config: state.auth.config,
         hasAttested: session.hasAttested,
         hasUserIdToken: !!auth.userContext,
         isSubmittingAttestation: session.isSubmittingAttestation,
+        serverState: state.auth.serverState,
         sessionError: session.error,
         sessionLoadDisplay: session.loadingDisplay,
         sessionLoadProgressPercent: session.loadingProgressPercent,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -168,7 +168,7 @@ export default class REDCapExportWebWorker {
 
             /*
              * Ensure the id generate for each dataset in REDCap has
-             * only valid characters and is wiithin the length limit.
+             * only valid characters and is within the length limit.
              */
             patientList!.forEach((d) => d.datasetId = cleanName(d.datasetId, dsNameLenLimit));
 

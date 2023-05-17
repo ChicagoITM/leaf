@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,7 @@
 import React from 'react';
 import { Bar, BarChart, LabelList, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { visualizationConfig } from '../../config/visualization';
-import { AgeByGenderBucket, AgeByGenderData } from '../../models/cohort/DemographicDTO';
+import { AgeByGenderData } from '../../models/cohort/DemographicDTO';
 
 interface Props {
     data: AgeByGenderData;

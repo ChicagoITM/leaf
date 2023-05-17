@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2021, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,12 +57,12 @@ namespace Services.Search
         DemographicCompilerContext ReadContextGrid(SqlMapper.GridReader gridReader)
         {
             var queryCtx = gridReader.ReadFirstOrDefault<QueryContext>();
-            var demoQuery = gridReader.ReadFirstOrDefault<DemographicQuery>();
+            var demoQuery = gridReader.ReadFirstOrDefault<DemographicQueryRecord>();
 
             return new DemographicCompilerContext
             {
                 QueryContext = queryCtx,
-                DemographicQuery = demoQuery
+                DemographicQuery = demoQuery.ToDemographicQuery()
             };
         }
 
@@ -101,6 +101,21 @@ namespace Services.Search
                 );
 
                 return ReadContextGrid(grid);
+            }
+        }
+
+        class DemographicQueryRecord
+        {
+            public string SqlStatement { get; set; }
+            public string ColumnNamesJson { get; set; }
+
+            public DemographicQuery ToDemographicQuery()
+            {
+                return new DemographicQuery
+                {
+                    SqlStatement = SqlStatement,
+                    ColumnNames = ColumnNamesSerde.Deserialize(ColumnNamesJson)
+                };
             }
         }
     }

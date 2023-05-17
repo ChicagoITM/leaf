@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -137,6 +137,18 @@
 
 .patientlist-info-emphasis {
     color: rgb(24, 142, 185);
+}
+
+.patientlist-column-selector-name-qualifier {
+    position: relative;
+    width: 50px;
+    margin-left: 2px
+}
+
+.patientlist-column-selector-name-qualifier-date-bounds-abbrev {
+    position: absolute;
+    top: 10px;
+    font-size: 10px;
 }
 
 .patientlist-dataset-column-selector-container {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Container, Col, Row } from 'reactstrap';
-import { ConnectDropTarget, DropTarget, DropTargetConnector, DropTargetMonitor } from 'react-dnd'
+import { ConnectDropTarget, DropTarget, DropTargetConnector, DropTargetMonitor } from 'react-dnd-cjs'
 import { PanelFilter } from '../../../../models/admin/PanelFilter';
 import { TextArea } from '../../Section/TextArea';
 import { setAdminPanelFilter, removeAdminPanelFilter, deleteAdminPanelFilter } from '../../../../actions/admin/panelFilter';

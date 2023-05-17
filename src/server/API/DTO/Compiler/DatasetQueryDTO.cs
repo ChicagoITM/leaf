@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2022, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@ namespace API.DTO.Compiler
         public string Id { get; set; }
         public string UniversalId { get; set; }
         public bool IsEncounterBased { get; set; }
+        public bool IsDefault { get; set; }
         public Shape Shape { get; set; }
         public string Name { get; set; }
         public string Category { get; set; }
@@ -25,6 +26,7 @@ namespace API.DTO.Compiler
             Id = dq.Id.Value.ToString();
             UniversalId = dq.UniversalId?.ToString();
             IsEncounterBased = dq.IsEncounterBased;
+            IsDefault = dq.IsDefault;
             Shape = dq.Shape;
             Name = dq.Name;
             Category = dq.Category;

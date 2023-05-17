@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2022, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@ namespace API.DTO.Admin.Compiler
         public Guid Id { get; set; }
         public string UniversalId { get; set; }
         public bool IsEncounterBased { get; set; }
+        public bool IsDefault { get; set; }
         public Shape Shape { get; set; }
         public string Name { get; set; }
         public int? CategoryId { get; set; }
@@ -51,6 +52,7 @@ namespace API.DTO.Admin.Compiler
                 Description = q.Description,
                 SqlStatement = q.SqlStatement,
                 IsEncounterBased = q.IsEncounterBased,
+                IsDefault = q.IsDefault,
                 SqlFieldDate = q.SqlFieldDate,
                 SqlFieldValueString = q.SqlFieldValueString,
                 SqlFieldValueNumeric = q.SqlFieldValueNumeric,
@@ -77,6 +79,7 @@ namespace API.DTO.Admin.Compiler
                 Description = q.Description,
                 SqlStatement = q.SqlStatement,
                 IsEncounterBased = q.IsEncounterBased,
+                IsDefault = q.IsDefault,
                 SqlFieldDate = q.SqlFieldDate,
                 SqlFieldValueString = q.SqlFieldValueString,
                 SqlFieldValueNumeric = q.SqlFieldValueNumeric,

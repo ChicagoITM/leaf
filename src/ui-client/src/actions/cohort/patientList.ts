@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,9 +39,11 @@ export const PATIENTLIST_COLUMN_TOGGLE = 'PATIENTLIST_COLUMN_TOGGLE';
 export const PATIENTLIST_SET_PAGINATION = 'PATIENTLIST_SET_PAGINATION';
 export const PATIENTLIST_ISOPEN_TOGGLE = 'PATIENTLIST_ISOPEN_TOGGLE';
 export const PATIENTLIST_SET_AVAILABLE = 'PATIENTLIST_SET_AVAILABLE';
+export const PATIENTLIST_SET_CUSTOM_COLUMN_NAMES = 'PATIENTLIST_SET_CUSTOM_COLUMN_NAMES';
 
 export interface CohortPatientListAction {
     id: number;
+    customColumnNames?: Map<string, string>;
     column?: PatientListColumn;
     datasetId?: string;
     datasets?: PatientListDatasetQuery[];
@@ -295,6 +297,14 @@ export const reorderColumns = (source: PatientListColumn, target: PatientListCol
 };
 
 // Synchronous
+export const setPatientListCustomColumnNames = (id: number, customColumnNames: Map<string, string>): CohortPatientListAction => {
+    return {
+        id,
+        customColumnNames,
+        type: PATIENTLIST_SET_CUSTOM_COLUMN_NAMES
+    };
+};
+
 export const setPatientListSingletonReceived = (id: number, rowCount: number): CohortPatientListAction => {
     return {
         id,

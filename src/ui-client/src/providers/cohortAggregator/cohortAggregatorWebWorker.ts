@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,7 +7,7 @@
 
 import { generate as generateId } from 'shortid';
 import { CohortMap, NetworkCohortState } from '../../models/state/CohortState';
-import { BinarySplitPair, DemographicStatistics, NihRaceEthnicityBucket } from '../../models/cohort/DemographicDTO';
+import { BinarySplitPair, DemographicStatistics } from '../../models/cohort/DemographicDTO';
 import { NetworkResponderMap } from '../../models/NetworkResponder';
 import { workerContext } from './cohortAggregatorWebWorkerContext';
 

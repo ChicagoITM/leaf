@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -414,6 +414,8 @@ export default class DatasetSearchEngineWebWorker {
              */
             for (let i = 0; i < all.length; i++) {
                 const ds = all[i];
+                if (ds.isDefault) continue;
+
                 let tokens = ds.name.toLowerCase().split(' ').concat(ds.tags.map(t => t.toLowerCase()));
                 if (ds.category) { tokens = tokens.concat(ds.category.toLowerCase().split(' ')); }
                 if (ds.description) { tokens = tokens.concat(ds.description.toLowerCase().split(' ')); }

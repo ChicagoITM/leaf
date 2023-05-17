@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -207,7 +207,7 @@ var addDemographics = function (payload) {
         for (let j = 0; j < dateFields.length; j++) {
             const col = dateFields[j];
             if (patientDto[col.id]) {
-                patientDto[col.id] = new Date(patientDto[col.id]);
+                patientDto[col.id] = parseTimestamp(patientDto[col.id])
             }
         }
         // Add to the patId arrays
@@ -710,10 +710,6 @@ var getMultirowDataCsv = function (payload) {
                         row.push(q+valueToCsvString(d)+q);
                     }
                 }
-                for (var j = 0; j < cols.length; j++) {
-                    var d = vals[cols[j].id];
-                    row.push(q+valueToCsvString(d)+q);
-                }
                 rows.push(row.join(','));
             }
         }
@@ -745,7 +741,11 @@ var getSingletonDataCsv = function (payload) {
         });
     }
     // Add column headers
-    rows.push(cols.map(function (col) { return col.id; }).join(','));
+    rows.push(cols.map((col) => {
+        var renamed = config.customColumnNames.get(col.id);
+        if (renamed) return renamed;
+        return col.id;
+    }).join(','));
     // Add rows
     patientMap.forEach(function (p) {
         var row = [];

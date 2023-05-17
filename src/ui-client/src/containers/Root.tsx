@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,8 +6,8 @@
  */ 
 
 import React from 'react';
-import { DndProvider } from 'react-dnd';
-import HTML5Backend from 'react-dnd-html5-backend';
+import { DndProvider } from 'react-dnd-cjs';
+import HTML5Backend from 'react-dnd-html5-backend-cjs';
 import { Provider } from 'react-redux';
 import { AppState } from '../models/state/AppState';
 import { defaultAuthorizationState } from '../reducers/auth';

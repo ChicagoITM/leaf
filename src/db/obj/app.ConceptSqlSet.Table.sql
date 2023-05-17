@@ -1,4 +1,4 @@
--- Copyright (c) 2021, UW Medicine Research IT, University of Washington
+-- Copyright (c) 2022, UW Medicine Research IT, University of Washington
 -- Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 -- This Source Code Form is subject to the terms of the Mozilla Public
 -- License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,7 @@ CREATE TABLE [app].[ConceptSqlSet](
 	[Updated] [datetime] NOT NULL,
 	[UpdatedBy] [nvarchar](1000) NOT NULL,
 	[EventId] [int] NULL,
+	[Description] [nvarchar](200) NULL,
  CONSTRAINT [PK_ConceptSqlSet] PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

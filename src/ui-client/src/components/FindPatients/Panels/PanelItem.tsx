@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,7 +6,7 @@
  */ 
 
 import React from 'react';
-import { ConnectDragPreview, ConnectDragSource, DragSource, DragSourceConnector, DragSourceMonitor } from 'react-dnd'
+import { ConnectDragPreview, ConnectDragSource, DragSource, DragSourceConnector, DragSourceMonitor } from 'react-dnd-cjs'
 import { PanelItem as PanelItemModel } from '../../../models/panel/PanelItem';
 import getDragPreview from '../../../utils/getDragPreview';
 import PanelItemNumericFilter from './PanelItemNumericFilter';

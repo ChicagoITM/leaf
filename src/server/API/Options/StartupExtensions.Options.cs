@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020, UW Medicine Research IT, University of Washington
+﻿// Copyright (c) 2022, UW Medicine Research IT, University of Washington
 // Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -162,17 +162,29 @@ namespace API.Options
 
             if (attest.Enabled)
             {
+                attest.SkipModeSelection = config.GetValue<bool>(Config.Attestation.SkipModeSelection);
                 attest.WithAttestationType(config.GetValue<string>(Config.Attestation.Type));
                 if (attest.Type != CustomAttestationType.None)
                 {
                     attest.Text = config.GetSection(Config.Attestation.Text).Get<string[]>();
                 }
             }
+
+            var hasCredits = config.TryGetValue<bool>(Config.Attestation.Credits.Enabled, out bool creditsEnabled);
+            if (hasCredits && creditsEnabled)
+            {
+                attest.Credits.Enabled = true;
+                attest.Credits.Text = config.GetValue<string>(Config.Attestation.Credits.Text);
+                attest.Credits.Logos = config.GetSection(Config.Attestation.Credits.Logos).Get<string[]>();
+            }
+
             services.Configure<AttestationOptions>(opts =>
             {
                 opts.Enabled = attest.Enabled;
+                opts.SkipModeSelection = attest.SkipModeSelection;
                 opts.Text = attest.Text;
                 opts.Type = attest.Type;
+                opts.Credits = attest.Credits;
             });
 
             return services;
@@ -409,6 +421,7 @@ namespace API.Options
             {
                 opts.ConnectionString = config.GetByProxy(Config.Db.Clin.Connection);
                 opts.DefaultTimeout = config.GetValue<int>(Config.Db.Clin.DefaultTimeout);
+                opts.WithRdbms(config.GetValue<string>(Config.Db.Clin.RDBMS));
                 opts.Cohort.WithQueryStrategy(config.GetValue<string>(Config.Db.Clin.Cohort.QueryStrategy));
 
                 if (opts.Cohort.QueryStrategy == ClinDbOptions.ClinDbCohortOptions.QueryStrategyOptions.Parallel)
@@ -429,8 +442,11 @@ namespace API.Options
                 }
             });
 
-            var extractor = new DatabaseExtractor();
+            var extractor = new ConnectionStringParser();
             var sp = services.BuildServiceProvider();
+
+            var clinDbOpts = sp.GetService<IOptions<ClinDbOptions>>().Value;
+            var appDbOpts = sp.GetService<IOptions<AppDbOptions>>().Value;
 
             // SQL Compiler Options
             config.TryBind<CompilerOptions>(Config.Compiler.Section, out var compilerOptions);
@@ -440,9 +456,27 @@ namespace API.Options
                 opts.FieldPersonId = compilerOptions.FieldPersonId;
                 opts.FieldEncounterId = compilerOptions.FieldEncounterId;
 
-                opts.AppDb = extractor.ExtractDatabase(sp.GetService<IOptions<AppDbOptions>>().Value);
-                opts.ClinDb = extractor.ExtractDatabase(sp.GetService<IOptions<ClinDbOptions>>().Value);
+                if (clinDbOpts.Rdbms == ClinDbOptions.RdbmsType.SqlServer)
+                {
+                    var clinDbTarget = extractor.Parse(clinDbOpts);
+                    var appDbTarget = extractor.Parse(appDbOpts);
+                    opts.AppDb = appDbTarget.Database;
+                    opts.ClinDb = clinDbTarget.Database;
+                    opts.SharedDbServer = appDbTarget.Server.Equals(clinDbTarget.Server, StringComparison.InvariantCultureIgnoreCase);
+                }
             });
+
+            // Check RDMBS and query strategy validity
+            if (clinDbOpts.Cohort.QueryStrategy == ClinDbOptions.ClinDbCohortOptions.QueryStrategyOptions.CTE)
+            {
+                if (clinDbOpts.Rdbms == ClinDbOptions.RdbmsType.BigQuery
+                    || clinDbOpts.Rdbms == ClinDbOptions.RdbmsType.MySql
+                    || clinDbOpts.Rdbms == ClinDbOptions.RdbmsType.MariaDb)
+                {
+                    throw new LeafConfigurationException($"{clinDbOpts.Rdbms} cannot be used with the CTE query strategy. Change 'CTE' to 'PARALLEL'.");
+                }
+            }
+
             return services;
         }
 
@@ -537,13 +571,16 @@ namespace API.Options
         {
             var sp = services.BuildServiceProvider();
             var log = sp.GetRequiredService<ILogger<Startup>>();
+            bool? unsecuredIsAdmin = true;
             var authentication = sp.GetRequiredService<IOptions<AuthenticationOptions>>().Value;
             var authorization = new AuthorizationOptions().WithMechanism(config.GetValue<string>(Config.Authorization.Mechanism));
             config.TryGetValue(Config.Authorization.AllowAllAuthenticatedUsers, out bool allowAllAuthenticated);
+            config.TryGetValue(Config.Authorization.UnsecuredIsAdmin, out unsecuredIsAdmin);
             services.Configure<AuthorizationOptions>(opts =>
             {
                 opts.Mechanism = authorization.Mechanism;
                 opts.AllowAllAuthenticatedUsers = allowAllAuthenticated;
+                opts.UnsecuredIsAdmin = !unsecuredIsAdmin.HasValue || (bool)unsecuredIsAdmin;
             });
 
             switch (authorization.Mechanism)

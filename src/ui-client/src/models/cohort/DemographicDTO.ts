@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -10,6 +10,11 @@ import { PatientListRowDTO } from '../patientList/Patient';
 export interface DemographicDTO {
     patients: PatientListRowDTO[];
     statistics: DemographicStatistics;
+    columnNames: CustomColumnNames;
+}
+
+export interface CustomColumnNames {
+    [key: string]: string;
 }
 
 export interface BinarySplitPair {

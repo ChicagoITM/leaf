@@ -1,19 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <!-- <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch> -->
     <TieredCompilation>true</TieredCompilation>
     <IsPackable>false</IsPackable>
     <LangVersion>latest</LangVersion>
-    <ReleaseVersion>3.1</ReleaseVersion>
+    <ReleaseVersion>6.0</ReleaseVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5"><IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+<PrivateAssets>all</PrivateAssets>
+</PackageReference>
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

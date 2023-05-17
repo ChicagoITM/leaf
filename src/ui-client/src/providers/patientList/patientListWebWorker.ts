@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, UW Medicine Research IT, University of Washington
+/* Copyright (c) 2022, UW Medicine Research IT, University of Washington
  * Developed by Nic Dobbins and Cliff Spital, CRIO Sean Mooney
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -386,7 +386,7 @@ export default class PatientListWebWorker {
                 for (let j = 0; j < dateFields.length; j++) {
                     const col = dateFields[j];
                     if (patientDto[col.id]) {
-                        patientDto[col.id] = new Date(patientDto[col.id]);
+                        patientDto[col.id] = parseTimestamp(patientDto[col.id])
                     }
                 }
 
@@ -953,7 +953,11 @@ export default class PatientListWebWorker {
             }
             
             // Add column headers
-            rows.push(cols.map((col: PatientListColumn) => col.id).join(','));
+            rows.push(cols.map((col: PatientListColumn) => {
+                const renamed = config!.customColumnNames.get(col.id);
+                if (renamed) return renamed;
+                return col.id;
+            }).join(','));
 
             // Add rows
             patientMap.forEach((p: Patient) => {
