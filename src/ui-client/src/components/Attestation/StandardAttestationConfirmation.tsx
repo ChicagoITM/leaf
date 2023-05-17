@@ -39,60 +39,32 @@ export default class StandardAttestationConfirmation extends React.PureComponent
                         {useDisplay} - {phiDisplay}
                     </div>,
                     <p key="2">
+                        <p><span>ITM Leaf is self-service cohort discovery tool that enables federated querying across ITM partner sites. 
+                            The tool provides aggregate counts only across one or multiple partner institutions.</span></p>
                         <h5 className="text-center">
-                            <u>OBLIGATIONS OF Leaf SYSTEM USER</u>
+                            <u>OBLIGATIONS OF ITM Leaf SYSTEM USER</u>
                         </h5>
                         <ol>
                             <li>
                                 <strong>
                                     <u>Performance of Activities.</u>
                                 </strong>
-                                System User may access Leaf to view the minimum necessary data to conduct cohort
-                                discovery. System User agrees to submit an official request for data through the
-                                Analytics Core (
-                                <a target="_blank" href="https://hub.uchospitals.edu/dept/dna/SitePages/ACRES.aspx">
-                                    https://hub.uchospitals.edu/dept/dna/SitePages/ACRES.aspx
-                                </a>
-                                ) for data use or disclosure exceeding cohort discovery.
-                            </li>
-                            <li>
-                                <strong>
-                                    <u>Nondisclosure Except As Provided In Agreement.</u>
-                                </strong>
-                                System User shall not abstract, use, or further disclose the data except as permitted or
-                                required by this Agreement or as described in an IRB approved protocol.
-                            </li>
-                            <li>
-                                <strong>
-                                    <u>Identification of Individual.</u>
-                                </strong>
-                                System User may not use the data to identify or contact any individual who is the
-                                subject of the PHI from which the data was created without a signed HIPAA Authorization
-                                from the individual.
-                            </li>
-                            <li>
-                                <strong>
-                                    <u>Reporting.</u>
-                                </strong>
-                                System User shall report to the HIPAA Program Office at 773-864-9716 within twenty-four
-                                (24) hours of System User becoming aware of any use or disclosure of the data in
-                                violation of this Agreement or applicable law.
-                            </li>
+                                System User may access Leaf to perform queries returning counts to support multi-institutional cohort discovery. 
+                                System user shall not use the cohort counts for business intelligence and should not use the tool to re-identify individual patients.
+                            </li>                            
                             <li>
                                 <strong>
                                     <u>Knowledge of Non-Compliance.</u>
                                 </strong>
-                                Any non-compliance by System User with this Agreement or with HIPAA or the HIPAA
-                                Regulations automatically will be considered a breach or violation of a material term of
-                                this Agreement if System User knew or reasonably should have known of such
-                                non-compliance and failed to immediately take reasonable steps to cure the
-                                non-compliance.
+                                Any non-compliance by System User with this Agreement or with HIPAA or the HIPAA Regulations automatically will be considered a 
+                                breach or violation of a material term of this Agreement if System User knew or reasonably should have known of such non-compliance 
+                                and failed to immediately take reasonable steps to cure the non-compliance.
                             </li>
+                            <span>If you determine that you need access to row level data for the conduct of research, please visit: https://chicagoitm.org/</span>
                         </ol>
-                        <h5 className="text-center">System User Acknowledgement</h5>I am authorized to view the data
-                        described in the Agreement for the purposes described in the Agreement. By accepting this
-                        document, I acknowledge and agree to abide by the restrictions on the use and disclosure of the
-                        data viewed in accordance with the Agreement.
+                        <h5 className="text-center">System User Acknowledgement</h5>I am authorized to participate in research as specified by my institution’s 
+                        IRB requirements, and I have the appropriate human subjects, HIPAA training, and other training as required by my institution.  By accepting 
+                        this document, I acknowledge and agree to abide by the restrictions on the use and disclosure of the data viewed within the tool.
                     </p>,
                 ]}
                 {!(isSubmittingAttestation || hasAttested) && (
